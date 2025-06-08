@@ -1,0 +1,36 @@
+{
+  "layout": {
+    "font": {"family": "Arial", "color": "#222", "size": 8},
+    "title": {"font": {"size": 9, "color": "#005B7F", "family": "Arial Black"}},
+    "paper_bgcolor": "#F0F0F0",
+    "plot_bgcolor": "#F8FAFB",
+    "margin": {"l": 65, "r": 65, "t": 55, "b": 45},
+    "legend": {
+      "bgcolor": "#FFFFFF",
+      "bordercolor": "#005B7F",
+      "borderwidth": 2,
+      "font": {"size": 8}
+    },
+    "xaxis": {
+      "showgrid": true,
+      "gridcolor": "#E0E0E0",
+      "linecolor": "#005B7F",
+      "linewidth": 2,
+      "ticks": "outside",
+      "tickfont": {"size": 8, "color": "#005B7F"},
+      "title": {"font": {"size": 8, "color": "#005B7F"}}
+    },
+    "yaxis": {
+      "showgrid": true,
+      "gridcolor": "#E0E0E0",
+      "linecolor": "#005B7F",
+      "linewidth": 2,
+      "ticks": "outside",
+      "tickfont": {"size": 8, "color": "#005B7F"},
+      "title": {"font": {"size": 8, "color": "#005B7F"}}
+    },
+    "shapes": [
+      {"type": "rect", "xref": "paper", "yref": "paper", "x0": 0, "y0": 0, "x1": 1, "y1": 1, "line": {"color": "#009739", "width": 4}, "fillcolor": "rgba(0,151,57,0.04)", "layer": "below"}
+    ]
+  }
+}
