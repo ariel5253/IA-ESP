@@ -45,7 +45,7 @@ Esta actividad **no busca que crees código nuevo**, sino que **comprendas compl
 
 ## 📤 ¿Qué debes entregar?
 
-El cuaderno `Notebook04_DescensoGradiente_Soln.ipynb` con:
+El cuaderno `Notebook04_DescensoGradiente_Soln.ipynb`  con:
 
 - ✅ Todas las celdas ejecutadas.
 - ✍️ Comentarios o explicaciones añadidas donde sea necesario.
