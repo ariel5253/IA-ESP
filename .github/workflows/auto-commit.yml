@@ -1,41 +1,54 @@
 name: Auto Conventional Commit
 
 on:
-  push:
-    branches:
-      - main
+  workflow_dispatch:
 
 jobs:
   auto_commit:
     runs-on: ubuntu-latest
 
     steps:
-      # Clona el repositorio usando un token con permisos de escritura
+      # Clona el repositorio usando token con permisos de escritura
       - name: Checkout repo
         uses: actions/checkout@v4
         with:
           token: ${{ secrets.GIT_TOKEN }}
+          ref: main
 
-      # Configura el usuario para Git
+      # Configura usuario Git
       - name: Setup Git
         run: |
           git config user.name "Commit Bot"
           git config user.email "ariel5253@misena.edu.co"
 
-      # Genera el diff comparado con el último commit remoto
+      # Modifica o genera cambios automáticamente aquí (OPCIONAL)
+      # Si tu flujo requiere cambios automáticos en archivos, colócalo aquí
+
+      # Verifica si hay cambios tras modificaciones automáticas
+      - name: Check for changes
+        id: git_changes
+        run: |
+          if [ -n "$(git status --porcelain)" ]; then
+            echo "has_changes=true" >> $GITHUB_OUTPUT
+          else
+            echo "has_changes=false" >> $GITHUB_OUTPUT
+          fi
+
+      # Genera diff solo si existen cambios
       - name: Get diff
         id: diff
+        if: steps.git_changes.outputs.has_changes == 'true'
         run: |
-          git fetch origin main
-          DIFF=$(git diff origin/main HEAD -- . ':!*.md' ':!*.txt')
+          DIFF=$(git diff HEAD -- . ':!*.md' ':!*.txt')
           DIFF="${DIFF//'%'/'%25'}"
           DIFF="${DIFF//$'\n'/'%0A'}"
           DIFF="${DIFF//$'\r'/'%0D'}"
           echo "diff=$DIFF" >> $GITHUB_OUTPUT
 
-      # Genera mensaje usando la API de OpenAI
+      # Genera commit message con OpenAI solo si hay cambios
       - name: Generate commit message with OpenAI
         id: ai_commit
+        if: steps.git_changes.outputs.has_changes == 'true'
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_KEY }}
         run: |
@@ -61,13 +74,10 @@ jobs:
           RESPONSE="${RESPONSE//$'\r'/'%0D'}"
           echo "message=$RESPONSE" >> $GITHUB_OUTPUT
 
-      # Realiza el commit y push sólo si hay cambios
+      # Realiza commit y push solo si hay cambios
       - name: Commit and push
+        if: steps.git_changes.outputs.has_changes == 'true'
         run: |
-          if [ -n "$(git status --porcelain)" ]; then
-            git add .
-            git commit -m "${{ steps.ai_commit.outputs.message }}"
-            git push origin HEAD:main
-          else
-            echo "No changes to commit."
-          fi
+          git add .
+          git commit -m "${{ steps.ai_commit.outputs.message }}"
+          git push origin main
