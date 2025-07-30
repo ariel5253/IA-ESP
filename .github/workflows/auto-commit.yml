@@ -1,0 +1,56 @@
+name: Auto Conventional Commit
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  auto_commit:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup Git
+        run: |
+          git config user.name "Commit Bot"
+          git config user.email "bot@hotmail.com"
+
+      - name: Get diff
+        id: diff
+        run: |
+          git fetch origin main
+          echo "diff<<EOF" >> $GITHUB_OUTPUT
+          git diff origin/main HEAD -- . ':!*.md' ':!*.txt' >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Generate commit message with OpenAI
+        id: ai_commit
+        run: |
+          RESPONSE=$(curl -s https://api.openai.com/v1/chat/completions \
+            -H "Authorization: Bearer ${{ secrets.OPENAI_KEY }}" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "model": "gpt-4",
+              "messages": [
+                {
+                  "role": "system",
+                  "content": "Eres un experto en desarrollo backend. Analiza el siguiente git diff y genera un mensaje de Conventional Commit claro y conciso."
+                },
+                {
+                  "role": "user",
+                  "content": "${{ steps.diff.outputs.diff }}"
+                }
+              ]
+            }' | jq -r '.choices[0].message.content')
+
+          echo "message=$RESPONSE" >> $GITHUB_OUTPUT
+
+      - name: Commit and push
+        run: |
+          echo "${{ steps.ai_commit.outputs.message }}"
+          git add .
+          git commit -m "${{ steps.ai_commit.outputs.message }}" || echo "No commit"
+          git push https://x-access-token:${{ secrets.GIT_TOKEN }}@github.com/${{ github.repository }} HEAD:main
