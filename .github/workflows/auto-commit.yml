@@ -1,32 +1,26 @@
 name: Auto Conventional Commit
 
 on:
-  workflow_dispatch:
+  workflow_dispatch:  # ejecutas manualmente desde GitHub
 
 jobs:
   auto_commit:
     runs-on: ubuntu-latest
 
     steps:
-      # Clona el repositorio usando token con permisos de escritura
       - name: Checkout repo
         uses: actions/checkout@v4
         with:
           token: ${{ secrets.GIT_TOKEN }}
-          ref: main
+          fetch-depth: 0  # Necesario para obtener historia completa
 
-      # Configura usuario Git
-      - name: Setup Git
+      - name: Configurar Git
         run: |
           git config user.name "Commit Bot"
           git config user.email "ariel5253@misena.edu.co"
 
-      # Modifica o genera cambios automáticamente aquí (OPCIONAL)
-      # Si tu flujo requiere cambios automáticos en archivos, colócalo aquí
-
-      # Verifica si hay cambios tras modificaciones automáticas
-      - name: Check for changes
-        id: git_changes
+      - name: Detectar cambios
+        id: check_changes
         run: |
           if [ -n "$(git status --porcelain)" ]; then
             echo "has_changes=true" >> $GITHUB_OUTPUT
@@ -34,21 +28,19 @@ jobs:
             echo "has_changes=false" >> $GITHUB_OUTPUT
           fi
 
-      # Genera diff solo si existen cambios
-      - name: Get diff
+      - name: Obtener diff
+        if: steps.check_changes.outputs.has_changes == 'true'
         id: diff
-        if: steps.git_changes.outputs.has_changes == 'true'
         run: |
-          DIFF=$(git diff HEAD -- . ':!*.md' ':!*.txt')
+          DIFF=$(git diff --cached -- . ':!*.md' ':!*.txt')
           DIFF="${DIFF//'%'/'%25'}"
           DIFF="${DIFF//$'\n'/'%0A'}"
           DIFF="${DIFF//$'\r'/'%0D'}"
           echo "diff=$DIFF" >> $GITHUB_OUTPUT
 
-      # Genera commit message con OpenAI solo si hay cambios
-      - name: Generate commit message with OpenAI
+      - name: Generar mensaje con OpenAI
+        if: steps.check_changes.outputs.has_changes == 'true'
         id: ai_commit
-        if: steps.git_changes.outputs.has_changes == 'true'
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_KEY }}
         run: |
@@ -60,7 +52,7 @@ jobs:
               "messages": [
                 {
                   "role": "system",
-                  "content": "Eres un experto en desarrollo backend. Recibirás un git diff y generarás un mensaje de commit siguiendo estrictamente las reglas de Conventional Commits (feat:, fix:, chore:, docs:, etc.). Solo entrega el mensaje del commit, sin explicaciones."
+                  "content": "Eres un experto en Conventional Commits. Genera un mensaje de commit tipo feat:, fix:, chore:, docs:, etc., basado en el siguiente git diff. Solo responde con el mensaje, sin explicaciones."
                 },
                 {
                   "role": "user",
@@ -69,14 +61,10 @@ jobs:
               ]
             }' | jq -r '.choices[0].message.content')
 
-          RESPONSE="${RESPONSE//'%'/'%25'}"
-          RESPONSE="${RESPONSE//$'\n'/'%0A'}"
-          RESPONSE="${RESPONSE//$'\r'/'%0D'}"
           echo "message=$RESPONSE" >> $GITHUB_OUTPUT
 
-      # Realiza commit y push solo si hay cambios
-      - name: Commit and push
-        if: steps.git_changes.outputs.has_changes == 'true'
+      - name: Commit y push automático
+        if: steps.check_changes.outputs.has_changes == 'true'
         run: |
           git add .
           git commit -m "${{ steps.ai_commit.outputs.message }}"
