@@ -8,17 +8,20 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # ✅ Clona el repo y obtiene historial completo
       - name: Checkout repo
         uses: actions/checkout@v4
         with:
           token: ${{ secrets.GIT_TOKEN }}
-          fetch-depth: 0  # Necesario para obtener historia completa
+          fetch-depth: 0
 
+      # ✅ Configura el usuario de Git
       - name: Configurar Git
         run: |
           git config user.name "Commit Bot"
           git config user.email "ariel5253@misena.edu.co"
 
+      # ✅ Verifica si hay cambios en el working tree
       - name: Detectar cambios
         id: check_changes
         run: |
@@ -28,16 +31,19 @@ jobs:
             echo "has_changes=false" >> $GITHUB_OUTPUT
           fi
 
+      # ✅ Obtiene el diff contra el último commit en remoto
       - name: Obtener diff
         if: steps.check_changes.outputs.has_changes == 'true'
         id: diff
         run: |
-          DIFF=$(git diff --cached -- . ':!*.md' ':!*.txt')
+          git fetch origin main
+          DIFF=$(git diff origin/main HEAD -- . ':!*.md' ':!*.txt')
           DIFF="${DIFF//'%'/'%25'}"
           DIFF="${DIFF//$'\n'/'%0A'}"
           DIFF="${DIFF//$'\r'/'%0D'}"
           echo "diff=$DIFF" >> $GITHUB_OUTPUT
 
+      # ✅ Genera el mensaje de Conventional Commit con OpenAI
       - name: Generar mensaje con OpenAI
         if: steps.check_changes.outputs.has_changes == 'true'
         id: ai_commit
@@ -52,7 +58,7 @@ jobs:
               "messages": [
                 {
                   "role": "system",
-                  "content": "Eres un experto en Conventional Commits. Genera un mensaje de commit tipo feat:, fix:, chore:, docs:, etc., basado en el siguiente git diff. Solo responde con el mensaje, sin explicaciones."
+                  "content": "Eres un experto en Conventional Commits. Recibirás un git diff y deberás generar un mensaje de commit siguiendo el formato estándar (feat:, fix:, chore:, docs:, etc.). Solo responde con el mensaje del commit."
                 },
                 {
                   "role": "user",
@@ -61,8 +67,12 @@ jobs:
               ]
             }' | jq -r '.choices[0].message.content')
 
+          RESPONSE="${RESPONSE//'%'/'%25'}"
+          RESPONSE="${RESPONSE//$'\n'/'%0A'}"
+          RESPONSE="${RESPONSE//$'\r'/'%0D'}"
           echo "message=$RESPONSE" >> $GITHUB_OUTPUT
 
+      # ✅ Commit y push automático
       - name: Commit y push automático
         if: steps.check_changes.outputs.has_changes == 'true'
         run: |
