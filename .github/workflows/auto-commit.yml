@@ -10,47 +10,64 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # Clona el repositorio usando un token con permisos de escritura
       - name: Checkout repo
         uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GIT_TOKEN }}
 
+      # Configura el usuario para Git
       - name: Setup Git
         run: |
           git config user.name "Commit Bot"
-          git config user.email "bot@hotmail.com"
+          git config user.email "ariel5253@misena.edu.co"
 
+      # Genera el diff comparado con el último commit remoto
       - name: Get diff
         id: diff
         run: |
           git fetch origin main
-          echo "diff<<EOF" >> $GITHUB_OUTPUT
-          git diff origin/main HEAD -- . ':!*.md' ':!*.txt' >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
+          DIFF=$(git diff origin/main HEAD -- . ':!*.md' ':!*.txt')
+          DIFF="${DIFF//'%'/'%25'}"
+          DIFF="${DIFF//$'\n'/'%0A'}"
+          DIFF="${DIFF//$'\r'/'%0D'}"
+          echo "diff=$DIFF" >> $GITHUB_OUTPUT
 
+      # Genera mensaje usando la API de OpenAI
       - name: Generate commit message with OpenAI
         id: ai_commit
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_KEY }}
         run: |
           RESPONSE=$(curl -s https://api.openai.com/v1/chat/completions \
-            -H "Authorization: Bearer ${{ secrets.OPENAI_KEY }}" \
+            -H "Authorization: Bearer $OPENAI_API_KEY" \
             -H "Content-Type: application/json" \
             -d '{
               "model": "gpt-4",
               "messages": [
                 {
                   "role": "system",
-                  "content": "Eres un experto en desarrollo backend. Analiza el siguiente git diff y genera un mensaje de Conventional Commit claro y conciso."
+                  "content": "Eres un experto en desarrollo backend. Recibirás un git diff y generarás un mensaje de commit siguiendo estrictamente las reglas de Conventional Commits (feat:, fix:, chore:, docs:, etc.). Solo entrega el mensaje del commit, sin explicaciones."
                 },
                 {
                   "role": "user",
-                  "content": "${{ steps.diff.outputs.diff }}"
+                  "content": "'"${{ steps.diff.outputs.diff }}"'"
                 }
               ]
             }' | jq -r '.choices[0].message.content')
 
+          RESPONSE="${RESPONSE//'%'/'%25'}"
+          RESPONSE="${RESPONSE//$'\n'/'%0A'}"
+          RESPONSE="${RESPONSE//$'\r'/'%0D'}"
           echo "message=$RESPONSE" >> $GITHUB_OUTPUT
 
+      # Realiza el commit y push sólo si hay cambios
       - name: Commit and push
         run: |
-          echo "${{ steps.ai_commit.outputs.message }}"
-          git add .
-          git commit -m "${{ steps.ai_commit.outputs.message }}" || echo "No commit"
-          git push https://x-access-token:${{ secrets.GIT_TOKEN }}@github.com/${{ github.repository }} HEAD:main
+          if [ -n "$(git status --porcelain)" ]; then
+            git add .
+            git commit -m "${{ steps.ai_commit.outputs.message }}"
+            git push origin HEAD:main
+          else
+            echo "No changes to commit."
+          fi
