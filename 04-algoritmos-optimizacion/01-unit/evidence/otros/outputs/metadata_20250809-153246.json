@@ -1,0 +1,20 @@
+{
+  "H_TOTAL": 5000,
+  "CAP_AREA": {
+    "LECTURA CRÍTICA": 1250.0,
+    "COMPETENCIA CIUDADANA": 1000.0,
+    "RAZONAMIENTO CUANTITATIVO": 1500.0,
+    "INGLÉS": 1250.0
+  },
+  "K": {
+    "LECTURA CRÍTICA": 0.25,
+    "COMPETENCIA CIUDADANA": 0.2,
+    "RAZONAMIENTO CUANTITATIVO": 0.3,
+    "INGLÉS": 0.15
+  },
+  "H_MIN": 1.0,
+  "riesgo_base_total": 13222.0,
+  "riesgo_post_total": 12074.7,
+  "reduccion_abs": 1147.2999999999993,
+  "timestamp": "20250809-153246"
+}
