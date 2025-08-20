@@ -1,0 +1,23 @@
+SA_selected,GA_selected
+mean radius,mean perimeter
+mean texture,mean area
+mean perimeter,mean compactness
+mean symmetry,mean concavity
+radius error,mean fractal dimension
+texture error,radius error
+area error,texture error
+smoothness error,area error
+compactness error,smoothness error
+concavity error,compactness error
+concave points error,concave points error
+fractal dimension error,worst radius
+worst radius,worst texture
+worst texture,worst perimeter
+worst perimeter,worst smoothness
+worst area,worst concavity
+worst smoothness,worst symmetry
+worst compactness,
+worst concavity,
+worst concave points,
+worst symmetry,
+worst fractal dimension,
